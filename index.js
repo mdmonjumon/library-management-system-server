@@ -38,15 +38,28 @@ async function run() {
         })
 
         // read category
-        app.get('/category', async (req, res) => {
+        app.get('/categories', async (req, res) => {
             let categories = [];
             const books = await bookOceanDB.find().toArray()
-            books.map(book=>{
-                if(!categories.includes(book.category)){
+            books.map(book => {
+                if (!categories.includes(book.category)) {
                     categories.push(book.category)
                 }
             })
             res.send(categories)
+        })
+
+        // read category wise data
+        app.get('/books', async (req, res) => {
+            const query = req.query;
+            console.log(query)
+            let filter = {};
+            if (query) {
+                filter = query
+            }
+            const books = await bookOceanDB.find(filter).toArray();
+
+            res.send(books)
         })
 
 
