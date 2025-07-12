@@ -29,10 +29,27 @@ const client = new MongoClient(uri, {
 });
 
 async function run() {
+
+    const bookOceanDB = client.db("BookOceanDB").collection("books");
+
     try {
-        app.get('/', (req, res)=>{
+        app.get('/', (req, res) => {
             res.send('BookOcean Server running')
         })
+
+        // read category
+        app.get('/category', async (req, res) => {
+            let categories = [];
+            const books = await bookOceanDB.find().toArray()
+            books.map(book=>{
+                if(!categories.includes(book.category)){
+                    categories.push(book.category)
+                }
+            })
+            res.send(categories)
+        })
+
+
 
 
 
