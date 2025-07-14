@@ -16,7 +16,7 @@ app.use(cors())
 
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xt5rphe.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -37,7 +37,7 @@ async function run() {
             res.send('BookOcean Server running')
         })
 
-        // read category
+        // get all unique category name
         app.get('/categories', async (req, res) => {
             let categories = [];
             const books = await bookOceanDB.find().toArray()
@@ -49,19 +49,37 @@ async function run() {
             res.send(categories)
         })
 
-        // read category wise data
+        // get all books and category wise books
         app.get('/books', async (req, res) => {
             const query = req.query;
-            console.log(query)
             let filter = {};
             if (query) {
                 filter = query
             }
             const books = await bookOceanDB.find(filter).toArray();
-
             res.send(books)
         })
 
+
+        // get book by id
+        app.get('/book/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await bookOceanDB.findOne(query);
+            res.send(result);
+        })
+
+
+        // decrement book quantity
+        app.patch('/book/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const updateBookQuantity = {
+                $inc: { quantity: -1 }
+            }
+            const result = await bookOceanDB.updateOne(filter, updateBookQuantity);
+            res.send(result);
+        })
 
 
 
