@@ -90,6 +90,43 @@ async function run() {
             res.send(result);
         })
 
+        // get borrowed books for single user
+        app.get('/borrowed-books/:email', async (req, res) => {
+            const email = req.params.email;
+            const filter = { email: email };
+            const borrowedBooks = await borrowedBooksDB.find(filter).toArray();
+            const allBooks = await bookOceanDB.find().toArray();
+            // console.log(borrowedBooks)
+            // const borrowedBooksBookId = borrowedBooks.map(borrowedBook => new ObjectId(borrowedBook.bookId))
+            const books = [];
+
+                borrowedBooks.map(borrowedBook => {
+                    allBooks.find(book => {
+                        if (book._id.toString() === new ObjectId(borrowedBook.bookId).toString()) {
+                            book.returnDate = borrowedBook.returnDate;
+                            books.push(book)
+                        }
+                    })
+                })
+
+            console.log(books)
+
+
+
+
+
+
+
+
+
+
+
+
+            res.send([]);
+
+
+        })
+
 
 
 
