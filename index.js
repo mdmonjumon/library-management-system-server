@@ -31,6 +31,7 @@ const client = new MongoClient(uri, {
 async function run() {
 
     const bookOceanDB = client.db("BookOceanDB").collection("books");
+    const borrowedBooksDB = client.db("BookOceanDB").collection("borrowed-book")
 
     try {
         app.get('/', (req, res) => {
@@ -78,6 +79,14 @@ async function run() {
                 $inc: { quantity: -1 }
             }
             const result = await bookOceanDB.updateOne(filter, updateBookQuantity);
+            res.send(result);
+        })
+
+
+        // borrowed book and user details add to db
+        app.post('/borrowed-book', async (req, res) => {
+            const data = req.body;
+            const result = await borrowedBooksDB.insertOne(data);
             res.send(result);
         })
 
