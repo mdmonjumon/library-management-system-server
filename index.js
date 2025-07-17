@@ -38,6 +38,13 @@ async function run() {
             res.send('BookOcean Server running')
         })
 
+        // book add to db
+        app.post('/book-add', async (req, res)=>{
+            const data = req.body;
+            const result = await bookOceanDB.insertOne(data);
+            res.send(result);
+        })
+
         // get all unique category name
         app.get('/categories', async (req, res) => {
             let categories = [];
@@ -82,6 +89,17 @@ async function run() {
             res.send(result);
         })
 
+        // increase book quantity
+        app.patch('/increase-book-quantity/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const updateBookQuantity = {
+                $inc: { quantity: +1 }
+            }
+            const result = await bookOceanDB.updateOne(filter, updateBookQuantity);
+            res.send(result);
+        })
+
 
         // borrowed book and user details add to db
         app.post('/borrowed-book', async (req, res) => {
@@ -104,27 +122,21 @@ async function run() {
                     allBooks.find(book => {
                         if (book._id.toString() === new ObjectId(borrowedBook.bookId).toString()) {
                             book.returnDate = borrowedBook.returnDate;
+                            book.borrowedDate = borrowedBook.borrowDate;
+                            book.borrowedId = borrowedBook._id;
                             books.push(book)
                         }
                     })
                 })
+            res.send(books);
+        })
 
-            console.log(books)
-
-
-
-
-
-
-
-
-
-
-
-
-            res.send([]);
-
-
+        // delete book from the borrowed books
+        app.delete('/borrowed-book/:id', async (req, res)=>{
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)}
+            const result = await borrowedBooksDB.deleteOne(query)
+            res.send(result)
         })
 
 
