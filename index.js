@@ -39,7 +39,7 @@ async function run() {
         })
 
         // book add to db
-        app.post('/book-add', async (req, res)=>{
+        app.post('/book-add', async (req, res) => {
             const data = req.body;
             const result = await bookOceanDB.insertOne(data);
             res.send(result);
@@ -77,6 +77,16 @@ async function run() {
             res.send(result);
         })
 
+        // get all image
+        app.get('/images', async (req, res) => {
+            const images = [];
+            const result = await bookOceanDB.find().toArray();
+            result.map(book => {
+                images.push(book.image);
+            })
+            res.send(images);
+        })
+
 
         // decrement book quantity
         app.patch('/book/:id', async (req, res) => {
@@ -100,6 +110,25 @@ async function run() {
             res.send(result);
         })
 
+        // update book info
+        app.patch('/update-book/:id', async (req, res) => {
+            const id = req.params.id;
+            const data = req.body;
+            const filter = { _id: new ObjectId(id) };
+            const updateInfo = {
+                $set: {
+                    title: data.title,
+                    author: data.author,
+                    category: data.category,
+                    image: data.photo,
+                    quantity: data.quantity,
+                    rating: data.rating
+                }
+            }
+            const result = await bookOceanDB.updateOne(filter, updateInfo);
+            res.send(result)
+        })
+
 
         // borrowed book and user details add to db
         app.post('/borrowed-book', async (req, res) => {
@@ -118,23 +147,23 @@ async function run() {
             // const borrowedBooksBookId = borrowedBooks.map(borrowedBook => new ObjectId(borrowedBook.bookId))
             const books = [];
 
-                borrowedBooks.map(borrowedBook => {
-                    allBooks.find(book => {
-                        if (book._id.toString() === new ObjectId(borrowedBook.bookId).toString()) {
-                            book.returnDate = borrowedBook.returnDate;
-                            book.borrowedDate = borrowedBook.borrowDate;
-                            book.borrowedId = borrowedBook._id;
-                            books.push(book)
-                        }
-                    })
+            borrowedBooks.map(borrowedBook => {
+                allBooks.find(book => {
+                    if (book._id.toString() === new ObjectId(borrowedBook.bookId).toString()) {
+                        book.returnDate = borrowedBook.returnDate;
+                        book.borrowedDate = borrowedBook.borrowDate;
+                        book.borrowedId = borrowedBook._id;
+                        books.push(book)
+                    }
                 })
+            })
             res.send(books);
         })
 
         // delete book from the borrowed books
-        app.delete('/borrowed-book/:id', async (req, res)=>{
+        app.delete('/borrowed-book/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id: new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await borrowedBooksDB.deleteOne(query)
             res.send(result)
         })
