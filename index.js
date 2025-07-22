@@ -9,7 +9,31 @@ const app = express()
 
 app.use(express.json())
 app.use(cookieParser())
-app.use(cors())
+app.use(cors({
+    origin: [
+        "http://localhost:5173",
+        "https://bookocean-8cdce.web.app",
+        "https://bookocean-8cdce.firebaseapp.com"
+    ],
+    credentials: true
+}))
+
+
+// verify token
+const verifyToken = (req, res, next) => {
+    const token = req?.cookies?.token;
+
+    if (!token) {
+        return res.status(401).send({ message: 'unauthorized access' })
+    }
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: 'unauthorized access' })
+        }
+        req.user = decoded;
+        next();
+    })
+}
 
 
 
@@ -36,6 +60,28 @@ async function run() {
     try {
         app.get('/', (req, res) => {
             res.send('BookOcean Server running')
+        })
+
+
+        // create jwt
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.JWT_SECRET, { expiresIn: "6h" })
+
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: process.env.NODE_ENV === "production" ? 'none' : 'strict'
+            }).send({ success: true })
+        })
+
+        // clear jwt token when user logout
+        app.post('/logout', (req, res) => {
+            res.clearCookie('token', {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: process.env.NODE_ENV === "production" ? 'none' : 'strict'
+            }).send({ success: true })
         })
 
         // book add to db
@@ -138,13 +184,15 @@ async function run() {
         })
 
         // get borrowed books for single user
-        app.get('/borrowed-books/:email', async (req, res) => {
+        app.get('/borrowed-books/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
             const filter = { email: email };
+
+            if (req.user.email !== email) {
+                return res.status(403).send({ message: 'forbidden' })
+            }
             const borrowedBooks = await borrowedBooksDB.find(filter).toArray();
             const allBooks = await bookOceanDB.find().toArray();
-            // console.log(borrowedBooks)
-            // const borrowedBooksBookId = borrowedBooks.map(borrowedBook => new ObjectId(borrowedBook.bookId))
             const books = [];
 
             borrowedBooks.map(borrowedBook => {
@@ -157,6 +205,8 @@ async function run() {
                     }
                 })
             })
+
+
             res.send(books);
         })
 
@@ -169,15 +219,11 @@ async function run() {
         })
 
 
-
-
-
-
         // Connect the client to the server	(optional starting in v4.7)
         // await client.connect();
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
-        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+        // await client.db("admin").command({ ping: 1 });
+        // console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
         // await client.close();
@@ -185,6 +231,6 @@ async function run() {
 }
 run().catch(console.dir);
 
-app.listen(port, () => {
-    console.log(`book ocean db listen on port ${port}`)
-})
+// app.listen(port, () => {
+//     console.log(`book ocean db listen on port ${port}`)
+// })
